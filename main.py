@@ -77,7 +77,8 @@ def delete_todo(todo_id: int):
     Return 204 (or 200 + message) if todo is deleted.
     Return {what?} if todo is not found.
     """
-    # TODO implement this method
+    if not persistence.delete(todo_id):
+        raise HTTPException(status_code=404, detail="Todo not found")
     raise HTTPException(status_code=500, detail="Not implemented yet")
 
 
