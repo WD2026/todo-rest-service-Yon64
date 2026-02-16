@@ -1,7 +1,7 @@
 """Main entry point for the Todo REST API."""
 
 from fastapi import FastAPI
-from routers import todo
+from src.routers import todo
 
 app = FastAPI(title="Todo REST API")
 

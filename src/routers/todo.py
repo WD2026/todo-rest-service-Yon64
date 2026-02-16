@@ -1,8 +1,8 @@
 """REST endpoints for todos."""
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
-from models import Todo, TodoCreate
-from persistence import TodoDao
+from src.models import Todo, TodoCreate
+from src.persistence import TodoDao
 
 dao = TodoDao("todo_data.json")
 
