@@ -1,0 +1,26 @@
+services:
+
+  todo:
+    build: .
+    container_name: todo
+    networks:
+      - app-network
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf:/etc/nginx:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+    depends_on:
+      - todo
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
