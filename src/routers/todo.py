@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from src.models import Todo, TodoCreate
 from src.persistence import TodoDao
+import logging
 
 dao = TodoDao("todo_data.json")
 
@@ -11,15 +12,20 @@ router = APIRouter(
     tags=["Todos"]
 )
 
+logger = logging.getLogger(__name__)    
+
 
 @router.get("/", response_model=list[Todo])
 def get_todos():
+    logger.info("Getting all todos")
     return dao.get_all()
 
 
 @router.post("/", response_model=Todo, status_code=status.HTTP_201_CREATED)
 def create_todo(todo: TodoCreate, request: Request, response: Response):
+    logger.info(f'Creating todo"{todo.text}"')
     created = dao.save(todo)
+    logger.info(f"Created todo {created.id}")
     response.headers["Location"] = f"/todos/{created.id}"
     return created
 
