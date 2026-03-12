@@ -23,9 +23,8 @@ def get_todos():
 
 @router.post("/", response_model=Todo, status_code=status.HTTP_201_CREATED)
 def create_todo(todo: TodoCreate, request: Request, response: Response):
-    logger.info(f'Creating todo"{todo.text}"')
     created = dao.save(todo)
-    logger.info(f"Created todo {created.id}")
+    logger.info("Todo created", todo_id=created.id, text=created.text)
     response.headers["Location"] = f"/todos/{created.id}"
     return created
 
@@ -44,16 +43,21 @@ def get_todo(todo_id: int):
 def update_todo(todo_id: int, todo: TodoCreate):
     existing = dao.get(todo_id)
     if not existing:
+        logger.warning("Failed to update todo: ID not found", todo_id=todo_id)
         raise HTTPException(status_code=404, detail="Todo not found")
 
     updated = Todo(id=todo_id, text=todo.text, done=todo.done)
-    return dao.update(updated)
+    result = dao.update(updated)
+    logger.info("Todo modified", todo_id=todo_id)
+    return result
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_todo(todo_id: int):
     if not dao.delete(todo_id):
+        logger.error("Failed to delete todo: ID not found", todo_id=todo_id)
         raise HTTPException(status_code=404, detail="Todo not found")
+    logger.info("Todo deleted", todo_id=todo_id)
     return
 
 
