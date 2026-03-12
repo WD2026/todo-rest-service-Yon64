@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from src.models import Todo, TodoCreate
 from src.persistence import TodoDao
-import logging
+from src import logging_config
 
 dao = TodoDao("todo_data.json")
 
@@ -12,7 +12,7 @@ router = APIRouter(
     tags=["Todos"]
 )
 
-logger = logging.getLogger(__name__)    
+logger = logging_config.get_logger(__name__)    
 
 
 @router.get("/", response_model=list[Todo])
@@ -34,6 +34,8 @@ def create_todo(todo: TodoCreate, request: Request, response: Response):
 def get_todo(todo_id: int):
     todo = dao.get(todo_id)
     if not todo:
+        # NEW: add structured logging. 
+        logger.warning("Todo not found", todo_id=todo_id)
         raise HTTPException(status_code=404, detail="Todo not found")
     return todo
 

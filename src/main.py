@@ -2,6 +2,9 @@
 
 from fastapi import FastAPI
 from src.routers import todo
+from src import logging_config
+
+logging_config.configure_logging()
 
 app = FastAPI(title="Todo REST API", root_path="/api")
 
