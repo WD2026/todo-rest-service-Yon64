@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Configuration
-domains=(labXXX.kasetsart.university)
+domains=(lab068.kasetsart.university)
 rsa_key_size=4096
 data_path="./data/certbot"
-email="user@example.com" # Change this!
+email="yon.d@ku.th"
 staging=0 # Set to 1 if you're testing to avoid hit limits
 
 if [ -d "$data_path" ]; then
