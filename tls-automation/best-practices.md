@@ -1,34 +1,49 @@
-# Best Practices for Managing TLS Certificates
+# Best Practices for TLS Certificate Management
 
-Managing TLS certificates is a critical aspect of infrastructure security. This document outlines recommendations for storing, renewing, and maintaining certificates on self-managed VMs or cloud services.
-
-## 1. Where to Store Public and Private Keys?
-
-### Secure Key Storage
-- **Private Keys**: These must **NEVER** be committed to a version control system (Git, SVN, etc.). If a private key is leaked, the security of the entire domain is compromised.
-- **Filesystem Permissions**: On the server, set strict permissions:
-  - Private keys: `chmod 600` (Read/Write for owner only).
-  - Public certificates: `chmod 644` (Read for everyone, Write for owner).
-- **Secrets Management**: For more complex environments, use a dedicated secrets manager like **HashiCorp Vault**, **AWS Secrets Manager**, or **Azure Key Vault**. These tools provide encryption-at-rest and audit logs of who accessed the keys.
-- **Isolation**: Storing certificates in a dedicated Docker volume (e.g., `/srv/docker/certs`) separates them from the application code and host OS.
-
-## 2. How to Manage Renewal?
-
-### Automation is Key
-- **Let's Encrypt**: Certbot should be configured to run automatically. In a Docker setup, this can be done via a sidecar container or a looping entrypoint as shown in this project.
-- **Monitoring and Alerting**: Do not rely solely on automation. Implement monitoring using tools like **Prometheus** (with `ssl_exporter`), **Uptime Kuma**, or simple scripts that check the expiration date and send alerts (Email, Slack, Discord) when the remaining time is less than 14 days.
-- **Test Renewals**: Periodically run a "dry run" (`certbot renew --dry-run`) to ensure the renewal process is still functional and not blocked by firewall or configuration changes.
-
-## 3. Revocation and Rotation
-
-- **Key Rotation**: It is a good practice to rotate your private keys periodically. Let's Encrypt does this automatically every 90 days during renewal by default.
-- **Revocation Plan**: If you suspect a private key has been compromised, you must revoke the certificate immediately using `certbot revoke --cert-name domain.com`. This informs browsers that the certificate is no longer trustworthy.
-
-## 4. Backups and Disaster Recovery
-
-- **Configuration Backup**: Regularly back up the `/etc/letsencrypt` configuration and archive directories. This allows you to quickly restore your certificate setup if the VM's disk fails.
-- **Separate Volume**: Store certificates on a persistent external volume, not in the container's ephemeral layer. This ensures that even if the container is deleted, the certificates remain.
+Managing TLS certificates is a critical aspect of infrastructure security. This document outlines "best practices" for storing, renewing, and maintaining certificates on self-managed VMs.
 
 ---
 
-*By following these practices, you ensure that your web services remain secure, compliant, and always available to users without interruption from expired certificates.*
+## 1. Key & Certificate Storage
+
+> [!IMPORTANT]
+> **Never commit your private keys to Git.** Public certificates can be shared, but private keys (`privkey.pem`) must remain strictly protected on the server.
+
+### Secure Filesystem Permissions
+On the server, always enforce strict permissions:
+| File Type | Recommended Permission | Why? |
+| :--- | :--- | :--- |
+| **Private Keys** | `chmod 600` | Only the root/owner can read/write. |
+| **Certificates** | `chmod 644` | Everyone can read for validation, but only owner can write. |
+
+### Storage in External Volumes
+As per the reproducible design, certificates should be stored in an **external Docker volume** (e.g., `/srv/docker/certs` or `./data/certbot/conf`).
+- **Isolation**: Keeps security credentials separate from the application container.
+- **Persistence**: Certificates survive even if the Nginx container is deleted or rebuilt.
+- **Portability**: Makes it easier to backup or migrate the credentials to another VM.
+
+---
+
+## 2. Renewal Management
+
+> [!TIP]
+> **Automate first, monitor second.** Let's Encrypt certificates expire every 90 days. Manual renewal is prone to human error and downtime.
+
+### Automated Logic
+- **Sidecar Containers**: Use a sidecar Certbot container (like our `tls-certbot`) that runs `certbot renew` in a loop (every 12 hours).
+- **Reload Signal**: After a successful renewal, the web server (Nginx) **must** reload to pick up the new certificate. Our automation uses a background loop in the Nginx container to perform a `nginx -s reload` every 6 hours.
+
+### Monitoring & Alerting
+- **Uptime Monitoring**: Use tools like **Uptime Kuma** or **Better Stack** to monitor the HTTPS expiration date and send alerts (Discord/Slack/Email) if the certificate has less than 14 days left.
+- **Log Review**: Periodically check your `certbot` container logs to ensure the ACME challenge is not failing due to firewall or DNS changes.
+
+---
+
+## 3. Disaster Recovery & Revocation
+
+- **Backups**: Include your `/etc/letsencrypt` configurations in your server's periodic backups.
+- **Revocation**: If a private key is accidentally leaked (e.g., committed to GitHub), immediately revoke it using `certbot revoke` and rotate the keys.
+- **HSTS Preloading**: Once your TLS is stable, consider submitting your domain to the [HSTS Preload List](https://hstspreload.org/) for permanent browser-level enforcement.
+
+---
+*By following these practices, you ensure that your web services remain secure, compliant, and always available to users without interruption.*
