@@ -39,16 +39,16 @@ $COMPOSE run --rm --entrypoint \
   "openssl req -x509 -nodes -newkey rsa:1024 -days 1\
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
-    -subj '/CN=localhost'" certbot
+    -subj '/CN=localhost'" tls-certbot
 echo
 
 echo "### Starting nginx ..."
-$COMPOSE up --force-recreate -d nginx
+$COMPOSE up --force-recreate -d tls-nginx
 echo
 
 echo "### Deleting dummy certificate for $domains ..."
 $COMPOSE run --rm --entrypoint \
-  "rm -rf /etc/letsencrypt/live/$domains /etc/letsencrypt/archive/$domains /etc/letsencrypt/renewal/$domains.conf" certbot
+  "rm -rf /etc/letsencrypt/live/$domains /etc/letsencrypt/archive/$domains /etc/letsencrypt/renewal/$domains.conf" tls-certbot
 echo
 
 echo "### Requesting Let's Encrypt certificate for $domains ..."
@@ -74,8 +74,10 @@ $COMPOSE run --rm --entrypoint \
     $domain_args \
     --rsa-key-size $rsa_key_size \
     --agree-tos \
-    --force-renewal" certbot
+    --force-renewal \
+    --non-interactive \
+    --no-eff-email" tls-certbot
 echo
 
 echo "### Reloading nginx ..."
-$COMPOSE exec nginx nginx -s reload
+$COMPOSE exec tls-nginx nginx -s reload

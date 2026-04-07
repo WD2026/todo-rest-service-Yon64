@@ -1,7 +1,6 @@
-services:
-  nginx:
+  tls-nginx:
     image: nginx:1.27-alpine
-    container_name: nginx
+    container_name: tls-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -12,9 +11,9 @@ services:
       - ./data/certbot/www:/var/www/certbot:ro
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  certbot:
+  tls-certbot:
     image: certbot/certbot
-    container_name: certbot
+    container_name: tls-certbot
     restart: unless-stopped
     volumes:
       - ./data/certbot/conf:/etc/letsencrypt:rw
