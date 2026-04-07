@@ -1,3 +1,4 @@
+services:
   tls-nginx:
     image: nginx:1.27-alpine
     container_name: tls-nginx
